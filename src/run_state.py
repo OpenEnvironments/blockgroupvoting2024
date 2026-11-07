@@ -14,7 +14,7 @@ from allocate import EQUAL_AREA_CRS as DEFAULT_CRS
 from allocate import allocate_votes
 from check_totals import FEC_NAME
 from ingest import VOTE_KEYS, check_state_totals
-from load import EQUAL_AREA_CRS, load_block_groups, load_precincts
+from load import EQUAL_AREA_CRS, find_block_groups, load_block_groups, load_precincts
 
 
 OUTPUT_COLUMNS = ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID"]
@@ -30,6 +30,7 @@ def format_output(allocated, state):
 
 def run_state(raw_dir, out_dir, state):
     """Allocate one state; returns a summary dict. Raises if votes are not conserved."""
+    bg_file = find_block_groups(raw_dir, state).name  # fail early, before the slow precinct read
     precincts = load_precincts(raw_dir, state)
     block_groups = load_block_groups(raw_dir, state)
     allocated, unallocated = allocate_votes(
@@ -45,6 +46,7 @@ def run_state(raw_dir, out_dir, state):
     format_output(allocated, state).to_csv(out_dir / f"{state.lower()}_blockgroup_votes.csv", index=False)
     lost = precincts.loc[precincts["precinct_id"].isin(unallocated), VOTE_KEYS].sum().sum()
     return {
+        "block_group_file": bg_file,
         "precincts": len(precincts),
         "block_groups": len(allocated),
         "precinct_total": float(precincts[VOTE_KEYS].sum().sum()),
@@ -75,23 +77,29 @@ def main(argv=None):
     if not states:
         ap.error("give --states and/or --fec-ok")
 
-    failures = []
+    failures, skipped = [], []
     for st in states:
         start = time.time()
         try:
             s = run_state(args.raw_dir, args.out_dir, st)
+        except FileNotFoundError as e:  # input missing: leave any existing output untouched
+            skipped.append(st)
+            print(f"{st}: SKIPPED {e}", flush=True)
+            continue
         except Exception as e:  # keep going so one bad state doesn't hide the rest
             failures.append(st)
             print(f"{st}: FAILED {type(e).__name__}: {e}", flush=True)
             continue
         print(
-            f"{st}: {s['precincts']} precincts -> {s['block_groups']} block groups, "
+            f"{st}: {s['precincts']} precincts -> {s['block_groups']} block groups ({s['block_group_file']}), "
             f"votes {s['precinct_total']:,.0f} in / {s['allocated_total']:,.0f} out, "
             f"{s['unallocated_precincts']} unallocated precincts ({s['unallocated_votes']:,.0f} votes), "
             f"{time.time() - start:.0f}s",
             flush=True,
         )
-    return 1 if failures else 0
+    if skipped:
+        print(f"skipped (input missing, existing output left as is): {', '.join(skipped)}", flush=True)
+    return 1 if failures or skipped else 0
 
 
 if __name__ == "__main__":

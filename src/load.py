@@ -49,10 +49,20 @@ def load_precincts(raw_dir, state):
     return out
 
 
+def find_block_groups(raw_dir, state):
+    """Path to the state's TIGER/Line block group zip (`tl_{vintage}_{fips}_bg.zip`, any vintage)."""
+    fips = STATE_FIPS[state.upper()]
+    found = sorted((Path(raw_dir) / "blockgroups").glob(f"tl_*_{fips}_bg.zip"))
+    if not found:
+        raise FileNotFoundError(f"no block group file for {state} (tl_*_{fips}_bg.zip)")
+    if len(found) > 1:
+        raise ValueError(f"several block group vintages for {state}: {[p.name for p in found]}")
+    return found[0]
+
+
 def load_block_groups(raw_dir, state):
     """TIGER block groups with `GEOID` (string), `ALAND`, `AWATER` and `land_fraction`."""
-    fips = STATE_FIPS[state.upper()]
-    path = Path(raw_dir) / "blockgroups" / f"tl_2024_{fips}_bg.zip"
+    path = find_block_groups(raw_dir, state)
     gdf = gpd.read_file(f"zip://{path}", columns=["GEOID", "ALAND", "AWATER"])
     gdf["GEOID"] = gdf["GEOID"].astype(str)
     total = gdf["ALAND"] + gdf["AWATER"]

@@ -5,7 +5,7 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import box, mapping
 
-from load import STATE_FIPS, load_block_groups, load_precincts
+from load import STATE_FIPS, find_block_groups, load_block_groups, load_precincts
 
 
 def _write_precinct_zip(raw_dir, state, rows):
@@ -67,6 +67,41 @@ def test_load_block_groups_keeps_geoid_string_and_computes_land_fraction(tmp_pat
     out = load_block_groups(tmp_path, "RI")
     assert list(out["GEOID"]) == ["440010001001", "440010001002"]
     assert list(out["land_fraction"]) == [0.75, 0.0]
+
+
+def _write_block_group_zip(raw_dir, filename):
+    folder = raw_dir / "blockgroups"
+    folder.mkdir(parents=True, exist_ok=True)
+    bgs = gpd.GeoDataFrame(
+        {"GEOID": ["440010001001"], "ALAND": [100], "AWATER": [0]},
+        geometry=[box(0, 0, 1, 1)],
+        crs="EPSG:4269",
+    )
+    shp_dir = raw_dir / "shp_tmp"
+    shp_dir.mkdir(exist_ok=True)
+    bgs.to_file(shp_dir / "bg.shp")
+    with zipfile.ZipFile(folder / filename, "w") as zf:
+        for f in shp_dir.iterdir():
+            zf.write(f, f.name)
+
+
+def test_load_block_groups_accepts_any_vintage(tmp_path):
+    _write_block_group_zip(tmp_path, "tl_2021_44_bg.zip")
+    assert find_block_groups(tmp_path, "RI").name == "tl_2021_44_bg.zip"
+    assert list(load_block_groups(tmp_path, "RI")["GEOID"]) == ["440010001001"]
+
+
+def test_missing_block_group_file_raises_file_not_found(tmp_path):
+    _write_block_group_zip(tmp_path, "tl_2021_44_bg.zip")
+    with pytest.raises(FileNotFoundError):
+        find_block_groups(tmp_path, "SC")
+
+
+def test_two_block_group_vintages_are_ambiguous(tmp_path):
+    _write_block_group_zip(tmp_path, "tl_2021_44_bg.zip")
+    _write_block_group_zip(tmp_path, "tl_2024_44_bg.zip")
+    with pytest.raises(ValueError):
+        find_block_groups(tmp_path, "RI")
 
 
 def test_state_fips_covers_50_states_and_dc():

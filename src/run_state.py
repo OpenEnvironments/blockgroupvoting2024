@@ -17,12 +17,14 @@ from ingest import VOTE_KEYS, check_state_totals
 from load import EQUAL_AREA_CRS, find_block_groups, load_block_groups, load_precincts
 
 
-OUTPUT_COLUMNS = ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID"]
+OUTPUT_COLUMNS = ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID", "PRECINCTS"]
 
 
 def format_output(allocated, state):
-    """Rename the allocated vote columns to the delivered layout, one row per block group."""
-    out = allocated[["rep", "dem", "other"]].rename(columns={"rep": "REP", "dem": "DEM", "other": "OTH"})
+    """Rename the allocated columns to the delivered layout, one row per block group."""
+    out = allocated[["rep", "dem", "other", "precinct_count"]].rename(
+        columns={"rep": "REP", "dem": "DEM", "other": "OTH", "precinct_count": "PRECINCTS"}
+    )
     out["STATE"] = state.upper()
     out.index.name = "BLOCKGROUP_GEOID"
     return out.reset_index()[OUTPUT_COLUMNS]

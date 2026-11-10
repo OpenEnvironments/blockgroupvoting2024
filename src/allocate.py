@@ -28,7 +28,9 @@ def allocate_votes(
     area, so weights sum to 1 per precinct. `tol` is relative to the totals.
 
     Returns (allocated, unallocated_ids). `allocated` has one row per block
-    group with the summed vote columns. `unallocated_ids` lists precincts with
+    group with the summed vote columns plus `precinct_count`, the number of
+    precincts with a positive weighted overlap in that block group (slivers
+    with zero land weight are not counted). `unallocated_ids` lists precincts with
     no overlap (their votes are not in `allocated`). Raises if the allocated
     totals do not equal the input totals of the allocated precincts.
     """
@@ -58,10 +60,11 @@ def allocate_votes(
     for col in vote_cols:
         merged[col] = merged[col] * merged["weight"]
     allocated = merged.groupby(bg_id)[vote_cols].sum()
+    allocated["precinct_count"] = merged.groupby(bg_id)[precinct_id].nunique()
 
     unallocated_ids = sorted(set(p[precinct_id]) - set(pieces[precinct_id]))
     expected = p.loc[~p[precinct_id].isin(unallocated_ids), vote_cols].sum()
-    diff = (allocated.sum() - expected).abs()
+    diff = (allocated[vote_cols].sum() - expected).abs()
     limit = tol * expected.clip(lower=1)
     if (diff > limit).any():
         raise AssertionError(f"Vote totals not conserved: {diff[diff > limit].to_dict()}")

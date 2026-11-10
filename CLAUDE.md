@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-Working pipeline, run per state: `src/load.py` (precinct and block group loaders) feeds `src/allocate.py` `allocate_votes()` (areal-weighted allocation, conservation check, list of unallocated precincts), driven by `src/run_state.py`. `src/ingest.py` and `src/check_totals.py` compare precinct totals to the FEC. There is no lint config or dependency manifest yet. Fill in the TODOs below as decisions are made.
+Working pipeline, run per state: `src/load.py` (precinct and block group loaders) feeds `src/allocate.py` `allocate_votes()` (areal-weighted allocation, conservation check, list of unallocated precincts), driven by `src/run_state.py`. `src/ingest.py` and `src/check_totals.py` compare precinct totals to the FEC. There is no lint config yet; `requirements.txt` records the environment. Fill in the TODOs below as decisions are made.
 
 Water handling: no water layer is available, so each overlap area is scaled by its block group's land fraction, `ALAND / (ALAND + AWATER)`, which assumes water is spread evenly through the block group. A precinct whose overlaps all have zero land weight is reported as unallocated rather than dropped silently. Allocation uses EPSG:5070 (Alaska EPSG:3338, Hawaii ESRI:102007).
 
@@ -27,7 +27,7 @@ set PROJ_DATA=%PROJ_LIB%
 
 Check precinct-level results against the FEC state totals with `python src/check_totals.py [--states AZ TX] [--max-pct-diff 0.001]` (run from the repo root). It reads the zips in `data/raw/precincts/` directly and the FEC CSV in `data/raw/fec/`, sums Harris, Trump and all other presidential votes per state (`src/ingest.py`), and prints per-state differences, exiting 1 if any state is outside the tolerance. States with no 2024 general file are listed, not checked. Harris and Trump are matched by exact column name (`G24PREDHAR`, `G24PRERTRU`, or `PREDEM24`/`PREREP24` for WI), because other-party columns can also start with `G24PRED`. The FEC file has a trailing "U.S. total" row, which `load_fec` uses as an internal consistency check.
 
-Allocate precinct votes onto block groups with `python src/run_state.py --states RI VT`, or `--fec-ok` for every state that passes the FEC check. Output is `data/processed/{st}_blockgroup_votes.csv` with columns `REP`, `DEM`, `OTH`, `STATE` (postal abbreviation) and `BLOCKGROUP_GEOID` (12-character string, so read it with `dtype=str`), and the script prints votes in versus out, plus any unallocated precincts, per state. It exits 1 if any state fails (for example, votes not conserved).
+Allocate precinct votes onto block groups with `python src/run_state.py --states RI VT`, or `--fec-ok` for every state that passes the FEC check. Output is `data/processed/{st}_blockgroup_votes.csv` with columns `REP`, `DEM`, `OTH`, `STATE` (postal abbreviation), `BLOCKGROUP_GEOID` (12-character string, so read it with `dtype=str`) and `PRECINCTS` (number of precincts with a positive land-weighted overlap in the block group; slivers with zero land weight are not counted), and the script prints votes in versus out, plus any unallocated precincts, per state. It exits 1 if any state fails (for example, votes not conserved).
 
 Run tests with `pytest tests`, or a single test with `pytest tests/test_allocate.py::test_even_split_and_conservation`. `tests/conftest.py` puts `src/` on the import path.
 
@@ -42,7 +42,7 @@ Citations, licenses and per-state RDH retrieval dates for every input are in `DA
 - **FEC state totals (validation only):** `data/raw/fec/Federal Election Commission, Official 2024 Presidential General Election Results.csv`. Citation: Federal Election Commission, Official 2024 Presidential General Election Results, compiled from state election offices, January 16, 2025. Harris figures are from page 3, Trump from page 5, and total votes from page 6. PDF: https://www.fec.gov/documents/5644/2024presgeresults.pdf. The CSV's `All other` column is not one of the cited PDF figures; it is consistent with total minus Harris minus Trump (checked for DC: 325,869 - 294,185 - 21,076 = 10,608), but how it was produced is not documented here.
 - **Vote fields to allocate:** 2024 presidential votes as `dem` (Harris), `rep` (Trump) and `other` (all other candidates) internally; the output files call them `DEM`, `REP` and `OTH`.
 - **Geographic scope:** all 50 states plus DC, run per state. The 18 states that failed the full FEC check were run too, after the Harris/Trump-only criterion was accepted.
-- **Environment and dependencies:** TODO
+- **Environment and dependencies:** conda-forge env `blockgroupvoting2024`, Python 3.14.7, pinned in `requirements.txt` (geopandas 1.2.0, shapely 2.1.2, pandas 3.0.6, numpy 2.5.3, pyogrio 0.13.0, pyproj 3.8.0). Rebuilding from the file is untested.
 
 ## Allocation method
 

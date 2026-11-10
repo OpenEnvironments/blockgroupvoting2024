@@ -34,6 +34,19 @@ def test_even_split_and_conservation():
     assert out["dem"].sum() == pytest.approx(100)
 
 
+def test_precinct_count_per_block_group():
+    precincts = _gdf(
+        [
+            {"precinct_id": "A", "dem": 10, "geom": box(0, 0, 2, 1)},
+            {"precinct_id": "B", "dem": 5, "geom": box(0, 0, 1, 1)},
+        ],
+        "precinct_id",
+    )
+    out, _ = allocate_votes(precincts, _block_groups(), ["dem"])
+    assert out.loc["010010001001", "precinct_count"] == 2
+    assert out.loc["010010001002", "precinct_count"] == 1
+
+
 def test_uneven_split_by_area():
     precincts = _gdf([{"precinct_id": "A", "dem": 100, "geom": box(0, 0, 1.5, 1)}], "precinct_id")
     out, _ = allocate_votes(precincts, _block_groups(), ["dem"])

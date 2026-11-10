@@ -1,0 +1,13 @@
+# Python environment used: conda env "blockgroupvoting2024" (conda-forge), Python 3.14.7.
+# Versions are those installed when the 2021 block group outputs were built.
+# Create it with conda (recommended, since GDAL/PROJ come as binaries):
+#   conda create -n blockgroupvoting2024 -c conda-forge python=3.14 --file requirements.txt
+# or with pip: pip install -r requirements.txt (wheels bundle GDAL/PROJ).
+geopandas==1.2.0
+shapely==2.1.2
+pandas==3.0.6
+numpy==2.5.3
+pyogrio==0.13.0
+pyproj==3.8.0
+# Tests (not installed in the env yet; run with `pytest tests`)
+pytest

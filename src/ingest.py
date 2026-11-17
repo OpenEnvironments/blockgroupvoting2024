@@ -52,7 +52,7 @@ def find_precinct_results(raw_dir, state):
     ignoring block-level disaggregations, and prefers the `_prec` file.
     """
     found = sorted(
-        p for p in (Path(raw_dir) / "precincts").glob(f"{state.lower()}_2024_gen_*.zip") if "blocks" not in p.name
+        p for p in (Path(raw_dir) / "rdh").glob(f"{state.lower()}_2024_gen_*.zip") if "blocks" not in p.name
     )
     if not found:
         return None

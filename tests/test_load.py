@@ -9,7 +9,7 @@ from load import STATE_FIPS, find_block_groups, load_block_groups, load_precinct
 
 
 def _write_precinct_zip(raw_dir, state, rows):
-    folder = raw_dir / "precincts"
+    folder = raw_dir / "rdh"
     folder.mkdir(parents=True)
     features = [
         {"type": "Feature", "geometry": mapping(geom), "properties": props} for geom, props in rows
@@ -41,7 +41,7 @@ def test_load_precincts_sums_vote_groups_and_assigns_unique_ids(tmp_path):
 
 
 def test_load_precincts_missing_file_raises(tmp_path):
-    (tmp_path / "precincts").mkdir()
+    (tmp_path / "rdh").mkdir()
     with pytest.raises(FileNotFoundError):
         load_precincts(tmp_path, "XX")
 

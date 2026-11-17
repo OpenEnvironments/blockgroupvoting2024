@@ -2,7 +2,7 @@
 
 Usage: python src/run_state.py --states RI VT
        python src/run_state.py --fec-ok      # every state whose totals pass the FEC check
-Writes data/processed/{st}_blockgroup_votes.csv with columns REP, DEM, OTH, STATE, BLOCKGROUP_GEOID.
+Writes data/interim/states/{st}_blockgroup_votes.csv with columns REP, DEM, OTH, STATE, BLOCKGROUP_GEOID.
 """
 
 import argparse
@@ -17,7 +17,7 @@ from ingest import VOTE_KEYS, check_state_totals
 from load import EQUAL_AREA_CRS, find_block_groups, load_block_groups, load_precincts
 
 
-OUTPUT_COLUMNS = ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID", "PRECINCTS"]
+OUTPUT_COLUMNS = ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID", "PRECINCTS", "TOT"]
 
 
 def format_output(allocated, state):
@@ -25,6 +25,7 @@ def format_output(allocated, state):
     out = allocated[["rep", "dem", "other", "precinct_count"]].rename(
         columns={"rep": "REP", "dem": "DEM", "other": "OTH", "precinct_count": "PRECINCTS"}
     )
+    out["TOT"] = out["REP"] + out["DEM"] + out["OTH"]
     out["STATE"] = state.upper()
     out.index.name = "BLOCKGROUP_GEOID"
     return out.reset_index()[OUTPUT_COLUMNS]
@@ -61,7 +62,7 @@ def run_state(raw_dir, out_dir, state):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--raw-dir", default="data/raw")
-    ap.add_argument("--out-dir", default="data/processed")
+    ap.add_argument("--out-dir", default="data/interim/states")
     ap.add_argument("--states", nargs="*", default=[])
     ap.add_argument("--fec-ok", action="store_true", help="run only states that pass the FEC totals check")
     ap.add_argument("--max-pct-diff", type=float, default=0.001)

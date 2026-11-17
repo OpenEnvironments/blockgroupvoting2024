@@ -9,7 +9,8 @@ def test_format_output_renames_columns_and_adds_state():
         index=pd.Index(["440010001001", "440010001002"], name="GEOID"),
     )
     out = format_output(allocated, "ri")
-    assert list(out.columns) == OUTPUT_COLUMNS == ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID", "PRECINCTS"]
+    assert list(out.columns) == OUTPUT_COLUMNS == ["REP", "DEM", "OTH", "STATE", "BLOCKGROUP_GEOID", "PRECINCTS", "TOT"]
+    assert list(out["TOT"]) == [31.0, 9.5]
     assert list(out["PRECINCTS"]) == [3, 1]
     assert list(out["BLOCKGROUP_GEOID"]) == ["440010001001", "440010001002"]
     assert list(out["STATE"]) == ["RI", "RI"]

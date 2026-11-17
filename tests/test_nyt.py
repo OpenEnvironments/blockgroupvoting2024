@@ -52,7 +52,7 @@ def test_load_nyt_precincts_filters_state_derives_other_and_caches(tmp_path):
     assert list(out["precinct_id"]) == ["11001-1", "11001-2"]
     assert list(out["dem"]) == [10, 5] and list(out["rep"]) == [2, 1] and list(out["other"]) == [1, 2]
     assert out.crs.to_string() == NYT_CRS
-    assert (tmp_path / "interim" / "nyt_dc_precincts.gpkg").exists()
+    assert (raw / "nyt" / "nyt_dc_precincts.gpkg").exists()
 
 
 def test_second_load_uses_cache_without_the_topojson(tmp_path):
@@ -79,14 +79,14 @@ def test_negative_other_is_rejected(tmp_path):
 def test_load_precincts_routes_dc_to_nyt(tmp_path):
     raw = tmp_path / "raw"
     _write_nyt(raw, ROWS)
-    (raw / "precincts").mkdir()
+    (raw / "rdh").mkdir()
     assert list(load_precincts(raw, "DC")["precinct_id"]) == ["11001-1", "11001-2"]
 
 
 def test_check_state_totals_uses_nyt_for_dc_and_does_not_report_it_missing(tmp_path):
     raw = tmp_path / "raw"
     _write_nyt(raw, ROWS)
-    (raw / "precincts").mkdir()
+    (raw / "rdh").mkdir()
     (raw / "fec").mkdir()
     fec = raw / "fec" / "fec.csv"
     fec.write_bytes(b'State,Democratic (Harris),Republican (Trump),All other\r\nDC,"15","3","3"\r\n'

@@ -91,7 +91,7 @@ def test_state_vote_totals_uses_all_layer_when_zip_has_several(tmp_path):
 
 
 def test_find_precinct_results_matches_prec_and_vtd_names_and_reports_missing(tmp_path):
-    folder = tmp_path / "precincts"
+    folder = tmp_path / "rdh"
     folder.mkdir()
     (folder / "az_2024_gen_prec.zip").write_bytes(b"")
     (folder / "az_2024_gen_2020_blocks_csv.zip").write_bytes(b"")

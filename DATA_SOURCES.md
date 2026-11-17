@@ -6,9 +6,9 @@ Exact download dates were not recorded, so each source is given as "accessed on 
 
 | Source | Used for | Local folder |
 |---|---|---|
-| Redistricting Data Hub (RDH) | Precinct boundaries and 2024 results, 50 states | `data/raw/precincts/` |
+| Redistricting Data Hub (RDH) | Precinct boundaries and 2024 results, 50 states | `data/raw/rdh/` |
 | The New York Times | Precinct boundaries and 2024 results, DC only | `data/raw/nyt/` |
-| U.S. Census Bureau TIGER/Line 2021 | Block group boundaries and land/water area | `data/raw/blockgroups/` |
+| U.S. Census Bureau TIGER/Line 2020 | Block group boundaries and land/water area | `data/raw/blockgroups/` |
 | Federal Election Commission (FEC) | State totals used to validate the precinct data | `data/raw/fec/` |
 
 ## 1. Redistricting Data Hub: 2024 general election precincts
@@ -85,7 +85,7 @@ Exact download dates were not recorded, so each source is given as "accessed on 
 
 ## 2. The New York Times: 2024 precinct results (DC only)
 
-- **What:** `precincts-with-results.topojson.gz`, the national precinct file (127,270 precincts in 45 states). Only the 144 DC rows are used; every other state comes from RDH. The first read takes about 2.5 minutes, so DC is cached in `data/interim/nyt_dc_precincts.gpkg`.
+- **What:** `precincts-with-results.topojson.gz`, the national precinct file (127,270 precincts in 45 states). Only the 144 DC rows are used; every other state comes from RDH. The first read takes about 2.5 minutes, so DC is cached in `data/raw/nyt/nyt_dc_precincts.gpkg`.
 - **Title and publisher:** "Presidential precinct data for the 2024 U.S. general election", The New York Times. Repository: https://github.com/nytimes/presidential-precinct-map-2024. Contact: electionsdata@nytimes.com. The README credits a named map team and about 40 further contributors.
 - **Download location:** the README lists the national files under `https://int.nyt.com/newsgraphics/elections/map-data/2024/national/` (as reported from the README; not re-checked). This copy was accessed on or before 2026-10-28; where it was downloaded from is not recorded. The local file's timestamp is March 22, 2025, while the repository's commit history runs to January 2026 and the README gives no publication date or version.
 - **Requested citation (from the README):** "2024 Precinct-Level Election Results." *New York Times*, www.nytimes.com/interactive/2025/us/elections/2024-election-map-precinct-results.html. Accessed on or before 2026-10-28. The README also asks users to link to the published map at https://www.nytimes.com/interactive/2025/us/elections/2024-election-map-precinct-results.html.
@@ -93,14 +93,14 @@ Exact download dates were not recorded, so each source is given as "accessed on 
 - **Fields:** `state`, `GEOID` (county FIPS plus precinct name), `votes_dem` (Harris), `votes_rep` (Trump), `votes_total` (includes third-party and write-in votes when the source reports them), `pct_dem_lead`, `official_boundary` (true when the shape came from a state or county file; true for all 144 DC precincts). The file also has an `id` field the README does not document. No CRS is stated; the DC coordinates are longitude/latitude, so EPSG:4326 is assumed (verified on load).
 - **DC check:** Harris 294,185, Trump 21,076 and total 325,869 equal the FEC figures exactly, so "other" derived as `votes_total - votes_dem - votes_rep` is 10,608, also equal to the FEC.
 
-## 3. U.S. Census Bureau: TIGER/Line 2021 block groups
+## 3. U.S. Census Bureau: TIGER/Line 2020 block groups
 
-- **What:** `tl_2021_{statefp}_bg.zip` (vintage 2021), with `GEOID`, `ALAND` and `AWATER`. Used for the allocation targets and for each block group's land fraction. Only the 50 states and DC are used, because those are the jurisdictions with voting results. The folder also holds files for American Samoa, Guam and the Northern Mariana Islands (FIPS 60, 66, 69); they are ignored.
-- **Vintage history:** the pipeline first ran on TIGER/Line 2024 block groups. On 2026-11-07, after those files were replaced with the 2021 set, all 51 outputs were rebuilt. For every state except Connecticut, every block group ID in the earlier outputs also exists in the 2021 file (boundaries were not compared). Connecticut's IDs differ completely between the two vintages (none of the 2,711 matched), probably because newer Census geography replaced Connecticut's counties with planning regions; this is not verified. The 2021 Connecticut IDs use the eight historical county codes (001 to 015), so they will not join to Census products that use planning regions.
-- **Publisher:** U.S. Department of Commerce, U.S. Census Bureau, Geography Division. Each zip holds ISO 19115 metadata (`.shp.iso.xml`) titled, for Rhode Island, "TIGER/Line Shapefile, 2021, state, Rhode Island, Current Block Group State-based". It gives the Census download location, http://www2.census.gov/geo/tiger/TIGER2021/BG/tl_2021_44_bg.zip (pattern `.../TIGER2021/BG/tl_2021_{fips}_bg.zip`). Datum NAD83 (EPSG:4269). Dates in the metadata include 2021 and 20210523.
-- **Date accessed / download location:** accessed on or before 2026-11-07 (the date the pipeline was re-run on these files). The Census location above comes from the metadata; where this copy was actually downloaded from is not recorded.
-- **Citation:** built from the file metadata, not an official Census string: U.S. Census Bureau, Geography Division. *TIGER/Line Shapefile, 2021, state, {State}, Current Block Group State-based* (`tl_2021_{fips}_bg`). Accessed on or before 2026-11-07.
-- **License / terms:** public domain under 17 U.S.C. § 105 (U.S. government work), as stated by the project owner. The 2021 metadata also says the TIGER/Line Shapefile products are not copyrighted, while "TIGER/Line" and "Census TIGER" are registered trademarks of the Census Bureau.
+- **What:** `tl_2020_{statefp}_bg.zip` (vintage 2020), with `GEOID`, `ALAND` and `AWATER`. Used for the allocation targets and for each block group's land fraction. Only the 50 states and DC are used, because those are the jurisdictions with voting results. The folder also holds files for American Samoa, Guam and the Northern Mariana Islands (FIPS 60, 66, 69); they are ignored.
+- **Vintage history:** the pipeline first ran on TIGER/Line 2024 block groups, then on the 2021 set (2026-11-07), and on 2026-11-15 the files were replaced with the 2020 set and all 51 outputs were rebuilt. The 2020 files hold 239,780 block groups in the 51 jurisdictions, and 239,175 of them received votes. Connecticut's IDs differ between the 2024 and 2021 vintages (none of the 2,711 matched), probably because newer Census geography replaced Connecticut's counties with planning regions; this is not verified. The 2020 Connecticut IDs use county codes (for example `090010101011`), so they will not join to Census products that use planning regions.
+- **Publisher:** U.S. Department of Commerce, U.S. Census Bureau, Geography Division. Each zip holds ISO 19115 metadata (`.shp.iso.xml`) dated 20200523 for Rhode Island. I did not read its title or download location for 2020; by analogy with the 2021 metadata, the Census location is probably `http://www2.census.gov/geo/tiger/TIGER2020/BG/tl_2020_{fips}_bg.zip`, which is not verified. Datum NAD83 (EPSG:4269).
+- **Date accessed / download location:** accessed on or before 2026-11-15 (the date the pipeline was re-run on these files). Where this copy was actually downloaded from is not recorded.
+- **Citation:** built from the file names, not an official Census string: U.S. Census Bureau, Geography Division. *TIGER/Line Shapefile, 2020, state, {State}, Current Block Group State-based* (`tl_2020_{fips}_bg`). The title wording follows the 2021 metadata and is not checked for 2020. Accessed on or before 2026-11-15.
+- **License / terms:** public domain under 17 U.S.C. § 105 (U.S. government work), as stated by the project owner. The 2021 metadata (not re-checked for 2020) also says the TIGER/Line Shapefile products are not copyrighted, while "TIGER/Line" and "Census TIGER" are registered trademarks of the Census Bureau.
 
 ## 4. Federal Election Commission: official 2024 presidential results
 

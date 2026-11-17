@@ -12,7 +12,7 @@ NYT_CRS = "EPSG:4326"
 
 
 def _cache_path(raw_dir, state):
-    return Path(raw_dir).parent / "interim" / f"nyt_{state.lower()}_precincts.gpkg"
+    return Path(raw_dir) / "nyt" / f"nyt_{state.lower()}_precincts.gpkg"
 
 
 def extract_nyt_state(raw_dir, state):
